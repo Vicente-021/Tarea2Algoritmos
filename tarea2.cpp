@@ -10,28 +10,30 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 using namespace std;
 
 auto crearMatrizAdyacencia(const string& archivo){
     ifstream archivo_mtx(archivo);
-    vector<vector<int>> matriz;
+    vector<vector<double>> matriz;
 
-    //eliminar el encabezado.
+    //eliminar encabezado
     string linea;
     getline(archivo_mtx, linea);
-    
-    //el sgundo numero de nodos, creo que representan las columnas de la matriz de adyacencia
+
+
+
     int nodos, columnas, aristas;
     archivo_mtx >> nodos >> columnas >> aristas;
-    matriz.resize(nodos, vector<int>(nodos, 0));
+    matriz.resize(nodos, vector<double>(nodos, 0));
 
     int u, v;
     double peso;
     
     while (archivo_mtx >> u >> v >> peso){
-        if(u>0 && u<nodos && v>0 && v<nodos){
-            matriz[u][v]=peso;
+        if(u>=1 && u<=nodos && v>=1 && v<=nodos){
+            matriz[u-1][v-1]=peso;
         }        
     }
 
@@ -41,13 +43,25 @@ auto crearMatrizAdyacencia(const string& archivo){
 
 //bellman ford
 float algoritmoBase(){
-    
+    return 0;
+}
+
+void imprimirMatriz(const vector<vector<double>>& matriz){
+    for(const auto& fila : matriz){
+        for(double val : fila){
+            cout << val << "\t";
+        }
+        cout << "\n";
+    }
 }
 
 
 
 int main(){
-    auto matrizAdy = crearMatrizAdyacencia("Chebyshev2.mtx");
+    auto matrizAdy = crearMatrizAdyacencia("test.mtx");
+    
+    cout << "Matriz de adyacencia (" << matrizAdy.size() << "x" << matrizAdy[0].size() << "):\n";
+    imprimirMatriz(matrizAdy);
 
     return 0;
 }
