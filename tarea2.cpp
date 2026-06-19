@@ -46,22 +46,10 @@ float algoritmoBase(){
     return 0;
 }
 
-void imprimirMatriz(const vector<vector<double>>& matriz){
-    for(const auto& fila : matriz){
-        for(double val : fila){
-            cout << val << "\t";
-        }
-        cout << "\n";
-    }
-}
-
-
-
 int main(){
-    auto matrizAdy = crearMatrizAdyacencia("test.mtx");
+    auto matrizAdy = crearMatrizAdyacencia("Chebyshev2.mtx");
     
-    cout << "Matriz de adyacencia (" << matrizAdy.size() << "x" << matrizAdy[0].size() << "):\n";
-    imprimirMatriz(matrizAdy);
+    cout << matrizAdy[5][1];
 
     return 0;
 }
