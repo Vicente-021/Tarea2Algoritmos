@@ -74,6 +74,8 @@ auto crearMatrizAdyacencia(const string& archivo){
 
 //bellman ford
 float algoritmoBase(int fila_start, int col_start, int fila_fin, int col_fin, auto &matriz){
+    vector<int> = distancias(n, __INT_MAX__);
+    distancia[]
     
     return 0;
 }
