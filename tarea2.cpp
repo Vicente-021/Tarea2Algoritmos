@@ -11,28 +11,29 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
 
 struct Edge {
     int u, v;
-    float peso;
+    double peso;
 };
+
+const double INF = 1e18;
 
 auto crearListaDeAristas(const string& archivo){
     ifstream archivo_mtx(archivo);
     string linea;
     getline(archivo_mtx, linea);
 
+    int nodos, columnas, aristas;
+
+    archivo_mtx >> nodos >> columnas >> aristas;
     vector<Edge> listaDeAristas;
 
-    int nodos, columnas, aristas;
-    archivo_mtx >> nodos >> columnas >> aristas;
-
-    listaDeAristas.resize(aristas);
-
     int u, v;
-    float peso;
+    double peso;
 
     while (archivo_mtx >> u >> v >> peso){
         if(u>=1 && u<=nodos && v>=1 && v<=nodos){
@@ -41,8 +42,6 @@ auto crearListaDeAristas(const string& archivo){
     }
     return listaDeAristas;
 }
-
-
 
 auto crearMatrizAdyacencia(const string& archivo){
     ifstream archivo_mtx(archivo);
@@ -72,11 +71,23 @@ auto crearMatrizAdyacencia(const string& archivo){
     return matriz;
 }
 
+vector<int> Bellmanford(int origen, const vector<Edge> &aristas, int nodos, bool& tieneCicloNegativo){
+    vector<int> distancias(nodos, INF);
+    distancias[origen] = 0;
+
+    for(int i=0; i<aristas.size();i++){
+        for(Edge arista : aristas){
+            if(distancias[arista.u<INF]){
+                distancias[arista.v] = min(distancias[arista.v], distancias[arista.u] + arista.peso);
+            }
+        }
+    }
+
+}
+
+
 //bellman ford
 float algoritmoBase(int fila_start, int col_start, int fila_fin, int col_fin, auto &matriz){
-    vector<int> = distancias(n, __INT_MAX__);
-    distancia[]
-    
     return 0;
 }
 
