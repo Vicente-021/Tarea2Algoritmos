@@ -22,7 +22,7 @@ struct Edge {
 
 const double INF = 1e18;
 
-auto crearListaDeAristas(const string& archivo){
+vector<Edge> crearListaDeAristas(const string& archivo){
     ifstream archivo_mtx(archivo);
     string linea;
     getline(archivo_mtx, linea);
@@ -37,13 +37,13 @@ auto crearListaDeAristas(const string& archivo){
 
     while (archivo_mtx >> u >> v >> peso){
         if(u>=1 && u<=nodos && v>=1 && v<=nodos){
-            listaDeAristas.push_back({u,v,peso});
+            listaDeAristas.push_back({u-1,v-1,peso});
         }
     }
     return listaDeAristas;
 }
 
-auto crearMatrizAdyacencia(const string& archivo){
+vector<vector<double>> crearMatrizAdyacencia(const string& archivo){
     ifstream archivo_mtx(archivo);
     vector<vector<double>> matriz;
 
@@ -71,30 +71,42 @@ auto crearMatrizAdyacencia(const string& archivo){
     return matriz;
 }
 
-vector<int> Bellmanford(int origen, const vector<Edge> &aristas, int nodos, bool& tieneCicloNegativo){
-    vector<int> distancias(nodos, INF);
+vector<double> Bellmanford(int origen, const vector<Edge> &aristas, int nodos, bool& tieneCicloNegativo){
+    tieneCicloNegativo = false;
+    vector<double> distancias(nodos, INF);
     distancias[origen] = 0;
 
-    for(int i=0; i<aristas.size();i++){
+    for(int i=0; i<nodos-1;i++){
         for(Edge arista : aristas){
-            if(distancias[arista.u<INF]){
+            if(distancias[arista.u]<INF){
                 distancias[arista.v] = min(distancias[arista.v], distancias[arista.u] + arista.peso);
             }
         }
     }
 
+    for(const Edge& arista : aristas){
+        if(distancias[arista.u]<INF && distancias[arista.u]+arista.peso < distancias[arista.v]){
+            tieneCicloNegativo = true;
+            break;
+        }
+    }
+
+
+    return distancias;
 }
 
 
-//bellman ford
-float algoritmoBase(int fila_start, int col_start, int fila_fin, int col_fin, auto &matriz){
-    return 0;
-}
+//bellman ford n veces
 
 int main(){
-    auto matrizAdy = crearMatrizAdyacencia("Chebyshev2.mtx");
+    vector<Edge> aristas = crearListaDeAristas("test_negcycle.mtx");
+    int n = 4;
+    bool cicloNeg = false;
+    vector<double> dist = Bellmanford(0, aristas, n, cicloNeg);
 
-    cout << matrizAdy[0][5];
-
+    cout << "Ciclo negativo: " << (cicloNeg? "si" : "no") << "\n";
+    for(int i=0; i<n;i++){
+        cout << "Dist["<< i <<"] = " << dist[i] << "\n";
+    }
     return 0;
 }
