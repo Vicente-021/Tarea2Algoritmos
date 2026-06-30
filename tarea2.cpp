@@ -13,6 +13,9 @@
 #include <sstream>
 #include <algorithm>
 #include <cmath>
+#include <cassert>
+#include <tuple>
+#include <cstdlib>
 
 //PRUEBAS
 #include <iomanip>
@@ -124,18 +127,20 @@ vector<vector<double>> algoritmoFloydWarshall(const vector<Edge>& aristas, int n
 
 //Funciones Auxiliares
 
-double encontrarMinimo(const vector<vector<double>> &matriz){
+tuple<int, int, double> encontrarParMasCercano(const vector<vector<double>>& matriz){
+    int u = 0, v = 1;
     double minimo = INF;
-    int nodos = matriz.size();
-
-    for(int i=0;i<nodos;i++){
-        for(int j=0;j<nodos;j++){
-            if (i!=j && matriz[i][j]<minimo && matriz[i][j]<INF){
+    int n = matriz.size();
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (i != j && matriz[i][j] < INF && matriz[i][j] < minimo) {
+                u = i;
+                v = j;
                 minimo = matriz[i][j];
             }
         }
     }
-    return minimo;
+    return {u, v, minimo};
 }
 
 void imprimirMatriz(const vector<vector<double>>& matriz, const string& nombre) {
@@ -154,8 +159,8 @@ void imprimirMatriz(const vector<vector<double>>& matriz, const string& nombre) 
     cout << "\n";
 }
 
-int main(){
-    auto [n, aristas] = crearListaDeAristas("test_neg.mtx");
+bool verificar(const string& archivo) {
+    auto [n, aristas] = crearListaDeAristas(archivo);
 
     bool cicloNegBase = false;
     bool cicloNegFW = false;
@@ -163,22 +168,50 @@ int main(){
     vector<vector<double>> matrizBase = algoritmoBase(aristas, n, cicloNegBase);
     vector<vector<double>> matrizFW = algoritmoFloydWarshall(aristas, n, cicloNegFW);
 
-    cout << "Ciclo negativo (algoritmoBase):          " << (cicloNegBase ? "si" : "no") << "\n";
-    cout << "Ciclo negativo (algoritmoFloydWarshall): " << (cicloNegFW ? "si" : "no") << "\n\n";
+    cout << "=== " << archivo << " (n=" << n << ") ===\n";
+    cout << "  Ciclo negativo (algoritmoBase):          " << (cicloNegBase ? "si" : "no") << "\n";
+    cout << "  Ciclo negativo (algoritmoFloydWarshall): " << (cicloNegFW ? "si" : "no") << "\n";
 
-    imprimirMatriz(matrizBase, "Matriz algoritmoBase");
-    imprimirMatriz(matrizFW, "Matriz algoritmoFloydWarshall");
+    if (cicloNegBase != cicloNegFW) {
+        cout << "  ERROR: los flags de ciclo negativo difieren\n\n";
+        return false;
+    }
 
-    bool iguales = true;
-    for (int i = 0; i < n && iguales; i++) {
-        for (int j = 0; j < n && iguales; j++) {
+    if (cicloNegBase || cicloNegFW) {
+        cout << "  Ciclo negativo detectado: las matrices puntuales pueden diferir (esperado)\n\n";
+        return true;
+    }
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
             if (abs(matrizBase[i][j] - matrizFW[i][j]) > 1e-9) {
-                iguales = false;
-                cout << "Dif en [" << i << "][" << j << "]: base=" << matrizBase[i][j] << ", FW=" << matrizFW[i][j] << "\n";
+                cout << "  ERROR: matrices difieren en [" << i << "][" << j << "]: base="
+                     << matrizBase[i][j] << ", FW=" << matrizFW[i][j] << "\n\n";
+                return false;
             }
         }
     }
-    cout << "Las matrices " << (iguales ? "coinciden" : "DIFIEREN") << "\n";
+    cout << "  Matrices coinciden\n";
 
-    return 0;
+    auto [uB, vB, dB] = encontrarParMasCercano(matrizBase);
+    auto [uF, vF, dF] = encontrarParMasCercano(matrizFW);
+    cout << "  Par mas cercano (algoritmoBase):          (" << uB << ", " << vB << ") = " << dB << "\n";
+    cout << "  Par mas cercano (algoritmoFloydWarshall): (" << uF << ", " << vF << ") = " << dF << "\n";
+
+    if (uB != uF || vB != vF || abs(dB - dF) > 1e-9) {
+        cout << "  ERROR: los pares difieren\n\n";
+        return false;
+    }
+    cout << "\n";
+    return true;
+}
+
+int main(){
+    bool todoOK = true;
+    todoOK &= verificar("test.mtx");
+    todoOK &= verificar("test_neg.mtx");
+    todoOK &= verificar("test_negcycle.mtx");
+    todoOK &= verificar("test_grande.mtx");
+    cout << (todoOK ? "TODOS LOS TESTS PASARON" : "ALGUN TEST FALLO") << "\n";
+    return todoOK ? 0 : 1;
 }
