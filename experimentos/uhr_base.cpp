@@ -81,7 +81,7 @@ vector<vector<double>> algoritmoBase(const vector<Edge> &aristas, int nodos, boo
     return resultadoAlgBase;
 }
 
-void generarGrafo(int n, double densidad, unsigned semilla, const string& archivo) {
+void generarGrafo(int n, double densidad, unsigned semilla, bool pesosConNegativos, const string& archivo) {
     srand(semilla);
 
     ofstream f(archivo);
@@ -96,7 +96,9 @@ void generarGrafo(int n, double densidad, unsigned semilla, const string& archiv
     for (int i = 1; i <= n; i++) {
         for (int j = 1; j <= n; j++) {
             if (i != j && (rand() / (double)RAND_MAX) < densidad) {
-                int peso = 1 + (rand() % 100);
+                int peso = pesosConNegativos
+                    ? (-50 + (rand() % 101))
+                    : (1 + (rand() % 100));
                 aristas.push_back({i, j, peso});
             }
         }
@@ -125,55 +127,80 @@ int main(int argc, char *argv[])
     auto end_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::nano> elapsed_time = end_time - begin_time;
 
-    std::ofstream time_data;
-    time_data.open(argv[1]);
-    time_data << "n,t_mean,t_stdev,t_Q0,t_Q1,t_Q2,t_Q3,t_Q4" << std::endl;
+    struct Config {
+        double densidad;
+        bool negativos;
+        const char* nombre;
+    };
+
+    const bool SOLO_POSITIVOS = false;
+    const bool CON_NEGATIVOS   = true;
+
+    Config configs[] = {
+        {0.3, SOLO_POSITIVOS, "sparse_pos"},
+        {0.3, CON_NEGATIVOS,   "sparse_neg"},
+        {0.8, SOLO_POSITIVOS, "dense_pos"},
+        {0.8, CON_NEGATIVOS,   "dense_neg"},
+    };
+
+    std::string prefijo = argv[1];
 
     std::cerr << "\033[0;36mRunning tests...\033[0m" << std::endl << std::endl;
-    executed_runs = 0;
-    for (n = lower; n <= upper; n += step) {
-        mean_time = 0;
-        time_stdev = 0;
 
-        // Setup: generate graph once per n (I/O outside timing loop)
-        generarGrafo(n, 0.3, 42, "temp.mtx");
-        auto [nn, aristas] = crearListaDeAristas("temp.mtx");
-        bool dummy = false;
+    for (const auto& cfg : configs) {
+        std::string csv_name = prefijo + "_" + cfg.nombre + ".csv";
+        std::ofstream time_data(csv_name);
+        time_data << "n,t_mean,t_stdev,t_Q0,t_Q1,t_Q2,t_Q3,t_Q4" << std::endl;
 
-        // Run to compute elapsed time (only the algorithm)
-        for (i = 0; i < runs; i++) {
-            display_progress(++executed_runs, total_runs_additive);
+        std::cerr << "  Config: " << cfg.nombre
+                  << " (densidad=" << cfg.densidad
+                  << ", negativos=" << (cfg.negativos ? "si" : "no") << ")\n";
 
-            begin_time = std::chrono::high_resolution_clock::now();
-            algoritmoBase(aristas, nn, dummy);
-            end_time = std::chrono::high_resolution_clock::now();
+        executed_runs = 0;
+        for (n = lower; n <= upper; n += step) {
+            mean_time = 0;
+            time_stdev = 0;
 
-            elapsed_time = end_time - begin_time;
-            times[i] = elapsed_time.count();
-            mean_time += times[i];
+            // Setup: generate graph once per n (I/O outside timing loop)
+            generarGrafo(n, cfg.densidad, 42, cfg.negativos, "temp.mtx");
+            auto [nn, aristas] = crearListaDeAristas("temp.mtx");
+            bool dummy = false;
+
+            // Run to compute elapsed time (only the algorithm)
+            for (i = 0; i < runs; i++) {
+                display_progress(++executed_runs, total_runs_additive);
+
+                begin_time = std::chrono::high_resolution_clock::now();
+                algoritmoBase(aristas, nn, dummy);
+                end_time = std::chrono::high_resolution_clock::now();
+
+                elapsed_time = end_time - begin_time;
+                times[i] = elapsed_time.count();
+                mean_time += times[i];
+            }
+
+            // Compute statistics
+            mean_time /= runs;
+
+            for (i = 0; i < runs; i++) {
+                dev = times[i] - mean_time;
+                time_stdev += dev * dev;
+            }
+
+            time_stdev /= runs - 1;
+            time_stdev = std::sqrt(time_stdev);
+
+            quartiles(times, q);
+
+            time_data << n << "," << mean_time << "," << time_stdev << ",";
+            time_data << q[0] << "," << q[1] << "," << q[2] << "," << q[3] << "," << q[4] << std::endl;
         }
 
-        // Compute statistics
-        mean_time /= runs;
-
-        for (i = 0; i < runs; i++) {
-            dev = times[i] - mean_time;
-            time_stdev += dev * dev;
-        }
-
-        time_stdev /= runs - 1;
-        time_stdev = std::sqrt(time_stdev);
-
-        quartiles(times, q);
-
-        time_data << n << "," << mean_time << "," << time_stdev << ",";
-        time_data << q[0] << "," << q[1] << "," << q[2] << "," << q[3] << "," << q[4] << std::endl;
+        time_data.close();
     }
 
     std::cerr << std::endl << std::endl;
     std::cerr << "\033[1;32mDone!\033[0m" << std::endl;
-
-    time_data.close();
 
     return 0;
 }
