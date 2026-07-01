@@ -1,0 +1,16 @@
+# Binarios generados
+a.out
+tarea2
+sigma.exe
+sigma2.exe
+sigma3.exe
+
+# Binarios de experimentos
+experimentos/uhr_base
+experimentos/uhr_fw
+
+# Archivos temporales
+experimentos/temp.mtx
+
+# Generados por tarea2 (regenerables)
+test_grande.mtx
